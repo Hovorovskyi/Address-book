@@ -18,6 +18,3 @@ class Contact(models.Model):
         return f'{self.first_name} {self.last_name}'
 
 
-
-
-
