@@ -18,3 +18,13 @@ class Contact(models.Model):
         return f'{self.first_name} {self.last_name}'
 
 
+class Event(models.Model):
+    title = models.CharField(max_length=128)
+    description = models.TextField(blank=True, null=True)
+    date_time = models.DateTimeField()
+    location = models.CharField(max_length=128)
+    contacts = models.ManyToManyField(Contact, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Event: {self.title}'

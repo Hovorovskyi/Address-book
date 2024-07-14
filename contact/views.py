@@ -1,49 +1,25 @@
-from contact.models import Contact
-from django.http import Http404
-from contact.serializers import ContactSerializer
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from contact.models import Contact, Event
+from contact.serializers import ContactSerializer, EventSerializer, EventCreateUpdateSerializer
+from rest_framework.viewsets import ModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, permissions
 
 
-class ContactList(APIView):
-
-    def get(self, request, format=None):
-        contacts = Contact.objects.all()
-        con_serializer = ContactSerializer(contacts, many=True)
-        return Response(con_serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, format=None):
-        serializer = ContactSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class ContactViewSet(ModelViewSet):
+    queryset = Contact.objects.all()
+    serializer_class = ContactSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['first_name', 'last_name', 'city']
+    permission_classes = [permissions.AllowAny]
 
 
-class ContactDetail(APIView):
+class EventViewSet(ModelViewSet):
+    queryset = Event.objects.prefetch_related('contacts').all()
+    filter_backends = [filters.SearchFilter]
+    filterset_fields = ['title', 'location', 'created_at', 'contacts']
+    permission_classes = [permissions.AllowAny]
 
-    def get_object(self, pk):
-        try:
-            return Contact.objects.get(pk=pk)
-        except Contact.DoesNotExist:
-            raise Http404
-
-
-    def get(self, request, pk, format=None):
-        contact = self.get_object(pk)
-        serializer = ContactSerializer(contact)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, pk, format=None):
-        contact = self.get(pk)
-        serializer = ContactSerializer(contact, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk, format=None):
-        contact = self.get_object(pk)
-        contact.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return EventCreateUpdateSerializer
+        return EventSerializer
